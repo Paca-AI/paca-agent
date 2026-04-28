@@ -1,0 +1,19 @@
+services:
+  paca-agent:
+    build:
+      context: .
+      target: runtime
+    env_file:
+      - .env
+    # Mount the Docker socket so the agent can start sandbox containers
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    ports:
+      # Only expose the webhook port when running in push mode
+      - "${WEBHOOK_PORT:-8000}:${WEBHOOK_PORT:-8000}"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import paca_agent"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
