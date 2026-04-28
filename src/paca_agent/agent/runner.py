@@ -13,8 +13,8 @@ import re
 import tempfile
 from dataclasses import dataclass
 
-from openhands.sdk import Agent, Conversation, LLM, Tool
-from openhands.sdk.workspace import DockerWorkspace
+from openhands.sdk import LLM, Agent, LocalConversation, Tool
+from openhands.sdk.workspace import LocalWorkspace
 from openhands.tools.file_editor import FileEditorTool
 from openhands.tools.terminal import TerminalTool
 
@@ -82,13 +82,12 @@ class AgentRunner:
             mcp_config=mcp_config,
         )
 
-        workspace = self._build_workspace()
-
         try:
             with tempfile.TemporaryDirectory() as workdir:
-                conversation = Conversation(
+                workspace = LocalWorkspace(working_dir=workdir)
+                conversation = LocalConversation(
                     agent=agent,
-                    workspace=workspace or workdir,
+                    workspace=workspace,
                 )
                 conversation.send_message(prompt)
                 result_events = conversation.run()
@@ -126,18 +125,6 @@ class AgentRunner:
             config["mcpServers"].update(platform_mcp["mcpServers"])
 
         return config
-
-    def _build_workspace(self) -> DockerWorkspace | None:
-        """Return a DockerWorkspace if docker settings are configured."""
-        try:
-            return DockerWorkspace(
-                image=self._docker_settings.image,
-                memory=self._docker_settings.memory,
-                cpu_count=self._docker_settings.cpu_count,
-            )
-        except Exception:
-            logger.warning("agent.workspace.docker_unavailable, falling back to local")
-            return None
 
     @staticmethod
     def _extract_last_message(events: object) -> str:

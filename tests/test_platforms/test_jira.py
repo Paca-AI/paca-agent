@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import httpx
 import pytest
 import respx
-import httpx
 
 from paca_agent.platforms.jira import JiraPlatform
 

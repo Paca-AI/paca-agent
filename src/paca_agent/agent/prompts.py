@@ -60,5 +60,6 @@ def _branch_name(task: Task) -> str:
     slug = task.title.lower()
     # Replace non-alphanumeric chars with hyphens
     import re
+
     slug = re.sub(r"[^a-z0-9]+", "-", slug).strip("-")[:50]
     return f"ai/{task.id}/{slug}"

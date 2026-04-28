@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from paca_agent.agent.prompts import build_task_prompt, _branch_name
-from paca_agent.models import Task, TaskType
+from paca_agent.agent.prompts import _branch_name, build_task_prompt
+from paca_agent.models import Task
 
 
 def test_code_task_prompt_contains_branch(code_task: Task) -> None:

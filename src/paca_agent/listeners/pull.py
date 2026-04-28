@@ -30,7 +30,7 @@ class PullListener(BaseListener):
                 for task in new_tasks:
                     seen.add(task.id)
                     logger.info("pull_listener.new_task", task_id=task.id, title=task.title)
-                    asyncio.create_task(self._dispatcher.dispatch(task))
+                    await self._dispatcher.dispatch(task)
 
             except Exception as exc:
                 logger.error("pull_listener.poll_error", error=str(exc))

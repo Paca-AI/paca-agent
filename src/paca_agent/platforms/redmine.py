@@ -8,7 +8,6 @@ from __future__ import annotations
 from paca_agent.models import Task, TaskType
 from paca_agent.platforms.base import BasePlatform
 
-
 # Redmine default status IDs
 _STATUS_IN_PROGRESS = 2
 _STATUS_RESOLVED = 3

@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from paca_agent.listeners.pull import PullListener
-from paca_agent.models import Task, TaskType
+from paca_agent.models import Task
 
 
 @pytest.fixture()
@@ -49,9 +49,8 @@ async def test_pull_listener_skips_seen_tasks(settings, platform, dispatcher, co
         if call_count >= 2:
             raise asyncio.CancelledError()
 
-    with patch("asyncio.sleep", side_effect=fake_sleep):
-        with pytest.raises(asyncio.CancelledError):
-            await listener.start()
+    with patch("asyncio.sleep", side_effect=fake_sleep), pytest.raises(asyncio.CancelledError):
+        await listener.start()
 
     # Despite two polls returning the same task, dispatch called only once
     assert dispatcher.dispatch.call_count == 1

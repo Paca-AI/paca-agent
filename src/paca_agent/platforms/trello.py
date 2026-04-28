@@ -40,6 +40,7 @@ class TrelloPlatform(BasePlatform):
 
     def _build_client(self):  # type: ignore[override]
         import httpx
+
         return httpx.AsyncClient(
             base_url=self.base_url,
             headers=self._auth_headers(),

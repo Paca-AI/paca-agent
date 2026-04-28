@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -101,7 +100,7 @@ class Settings(BaseSettings):
     ai_account_id: str = Field(..., description="User ID of the AI account on the platform")
 
     @classmethod
-    def load(cls) -> "Settings":
+    def load(cls) -> Settings:
         """Load settings from .env and environment variables."""
         return cls(
             llm=LLMSettings(),

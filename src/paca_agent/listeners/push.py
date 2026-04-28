@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import hmac
-import asyncio
 from typing import Annotated
 
 import uvicorn
@@ -18,7 +18,7 @@ from paca_agent.utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-def _build_app(listener: "PushListener") -> FastAPI:
+def _build_app(listener: PushListener) -> FastAPI:
     app = FastAPI(title="paca-agent webhook", docs_url=None, redoc_url=None)
 
     @app.post("/webhook/{platform}", status_code=status.HTTP_202_ACCEPTED)

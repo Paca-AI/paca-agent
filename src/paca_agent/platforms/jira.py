@@ -86,10 +86,7 @@ class JiraPlatform(BasePlatform):
             return ""
         if adf_node.get("type") == "text":
             return adf_node.get("text", "")
-        parts = [
-            JiraPlatform._extract_text(child)
-            for child in adf_node.get("content", [])
-        ]
+        parts = [JiraPlatform._extract_text(child) for child in adf_node.get("content", [])]
         return " ".join(p for p in parts if p)
 
     # ------------------------------------------------------------------
@@ -122,9 +119,15 @@ class JiraPlatform(BasePlatform):
     async def add_task_comment(self, task_id: str, comment: str) -> None:
         response = await self.client.post(
             f"/rest/api/3/issue/{task_id}/comment",
-            json={"body": {"type": "doc", "version": 1, "content": [
-                {"type": "paragraph", "content": [{"type": "text", "text": comment}]}
-            ]}},
+            json={
+                "body": {
+                    "type": "doc",
+                    "version": 1,
+                    "content": [
+                        {"type": "paragraph", "content": [{"type": "text", "text": comment}]}
+                    ],
+                }
+            },
         )
         response.raise_for_status()
 

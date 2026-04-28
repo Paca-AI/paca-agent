@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import httpx
 import pytest
 import respx
-import httpx
 
 from paca_agent.platforms.paca import PacaPlatform
 
@@ -43,9 +43,7 @@ async def test_get_assigned_tasks(platform: PacaPlatform) -> None:
 
 @respx.mock
 async def test_update_task_status(platform: PacaPlatform) -> None:
-    respx.patch("https://api.paca.dev/v1/tasks/42").mock(
-        return_value=httpx.Response(200, json={})
-    )
+    respx.patch("https://api.paca.dev/v1/tasks/42").mock(return_value=httpx.Response(200, json={}))
 
     async with platform:
         await platform.update_task_status("42", "in_progress")

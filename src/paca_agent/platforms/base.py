@@ -21,7 +21,7 @@ class BasePlatform(ABC):
     # Lifecycle
     # ------------------------------------------------------------------
 
-    async def __aenter__(self) -> "BasePlatform":
+    async def __aenter__(self) -> BasePlatform:
         self._client = self._build_client()
         return self
 
