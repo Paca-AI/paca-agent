@@ -46,7 +46,8 @@ def _code_task_prompt(
     available_statuses: list[str],
 ) -> str:
     branch_name = _branch_name(task)
-    clone_url = f"https://github.com/{github_repo}.git"
+    clone_url_https = f"https://github.com/{github_repo}.git"
+    clone_url_ssh = f"git@github.com:{github_repo}.git"
     credential_setup = _credential_setup_step(credential_helper_path)
     status_section = _status_section(available_statuses)
     return f"""You are an AI software engineer. Complete the following task from the project management system.
@@ -61,7 +62,9 @@ def _code_task_prompt(
 {status_section}
 ## Instructions
 1. Configure git authentication: {credential_setup}
-2. Clone the repository: `git clone {clone_url}`
+2. Clone the repository using HTTPS: `git clone {clone_url_https}`
+   - If the HTTPS clone fails (e.g. "Repository not found" or authentication error), immediately retry using SSH: `git clone {clone_url_ssh}`
+   - Do NOT search for the repository, fork it, or create a new one — just switch to SSH and continue.
 3. Create a new feature branch named `{branch_name}` from `{default_branch}`.
 4. Before making any commits, configure git to use the correct author identity:
    - `git config user.name "{committer_name}"`
@@ -88,7 +91,8 @@ def _general_task_prompt(
     available_statuses: list[str],
 ) -> str:
     branch_name = _branch_name(task)
-    clone_url = f"https://github.com/{github_repo}.git"
+    clone_url_https = f"https://github.com/{github_repo}.git"
+    clone_url_ssh = f"git@github.com:{github_repo}.git"
     credential_setup = _credential_setup_step(credential_helper_path)
     status_section = _status_section(available_statuses)
     return f"""You are an AI assistant. Complete the following task.
@@ -104,7 +108,9 @@ def _general_task_prompt(
 ## Instructions
 1. Configure git authentication: {credential_setup}
 2. Analyse the task and complete it to the best of your ability.
-3. Clone the repository: `git clone {clone_url}` then create branch `{branch_name}` from `{default_branch}`.
+3. Clone the repository using HTTPS: `git clone {clone_url_https}` then create branch `{branch_name}` from `{default_branch}`.
+   - If the HTTPS clone fails (e.g. "Repository not found" or authentication error), immediately retry using SSH: `git clone {clone_url_ssh}`
+   - Do NOT search for the repository, fork it, or create a new one — just switch to SSH and continue.
 4. Before making any commits, configure git to use the correct author identity:
    - `git config user.name "{committer_name}"`
    - `git config user.email "{committer_email}"`
