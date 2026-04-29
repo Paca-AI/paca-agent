@@ -5,7 +5,7 @@ API docs: https://www.redmine.org/projects/redmine/wiki/Rest_api
 
 from __future__ import annotations
 
-from paca_agent.models import Task, TaskType
+from paca_agent.models import Task
 from paca_agent.platforms.base import BasePlatform
 
 # Redmine default status IDs
@@ -53,11 +53,6 @@ class RedminePlatform(BasePlatform):
 
     def _parse_issue(self, issue: dict) -> Task:
         description = issue.get("description", "") or ""
-        task_type = (
-            TaskType.CODE
-            if any(kw in description.lower() for kw in ("implement", "fix", "bug", "patch"))
-            else TaskType.GENERAL
-        )
         return Task(
             id=str(issue["id"]),
             title=issue.get("subject", ""),
@@ -65,7 +60,6 @@ class RedminePlatform(BasePlatform):
             status=issue.get("status", {}).get("name", ""),
             assignee_id=str(issue.get("assigned_to", {}).get("id", "")),
             platform="redmine",
-            task_type=task_type,
             raw=issue,
         )
 

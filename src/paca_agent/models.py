@@ -4,12 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import StrEnum
-
-
-class TaskType(StrEnum):
-    CODE = "code"
-    GENERAL = "general"
 
 
 @dataclass
@@ -23,8 +17,6 @@ class Task:
     assignee_id: str
     platform: str
 
-    # Optional code-related fields populated when task_type == CODE
-    task_type: TaskType = TaskType.GENERAL
     repo_url: str | None = None
     branch_hint: str | None = None
 

@@ -5,7 +5,7 @@ API docs: https://docs.paca.dev/api
 
 from __future__ import annotations
 
-from paca_agent.models import Task, TaskType
+from paca_agent.models import Task
 from paca_agent.platforms.base import BasePlatform
 
 
@@ -52,11 +52,6 @@ class PacaPlatform(BasePlatform):
 
     def _parse_task(self, item: dict) -> Task:
         description = item.get("description", "") or ""
-        task_type = (
-            TaskType.CODE
-            if any(kw in description.lower() for kw in ("implement", "fix", "refactor", "code"))
-            else TaskType.GENERAL
-        )
         return Task(
             id=str(item["id"]),
             title=item.get("title", ""),
@@ -64,7 +59,6 @@ class PacaPlatform(BasePlatform):
             status=item.get("status", {}).get("name", ""),
             assignee_id=str(item.get("assignee", {}).get("id", "")),
             platform="paca",
-            task_type=task_type,
             raw=item,
         )
 

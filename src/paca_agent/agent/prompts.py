@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from paca_agent.models import Task, TaskType
+from paca_agent.models import Task
 
 
 def build_task_prompt(
@@ -15,42 +15,12 @@ def build_task_prompt(
     available_statuses: list[str] | None = None,
 ) -> str:
     """Build the agent's instruction prompt for the given *task*."""
-    if task.task_type == TaskType.CODE:
-        return _code_task_prompt(
-            task,
-            github_repo,
-            default_branch,
-            credential_helper_path,
-            committer_name,
-            committer_email,
-            available_statuses or [],
-        )
-    return _general_task_prompt(
-        task,
-        github_repo,
-        default_branch,
-        credential_helper_path,
-        committer_name,
-        committer_email,
-        available_statuses or [],
-    )
-
-
-def _code_task_prompt(
-    task: Task,
-    github_repo: str,
-    default_branch: str,
-    credential_helper_path: str,
-    committer_name: str,
-    committer_email: str,
-    available_statuses: list[str],
-) -> str:
     branch_name = _branch_name(task)
     clone_url_https = f"https://github.com/{github_repo}.git"
     clone_url_ssh = f"git@github.com:{github_repo}.git"
     credential_setup = _credential_setup_step(credential_helper_path)
-    status_section = _status_section(available_statuses)
-    return f"""You are an AI software engineer. Complete the following task from the project management system.
+    status_section = _status_section(available_statuses or [])
+    return f"""You are an AI agent. Complete the following task from the project management system.
 
 ## Task
 **ID**: {task.id}
@@ -62,64 +32,23 @@ def _code_task_prompt(
 {status_section}
 ## Instructions
 1. Configure git authentication: {credential_setup}
-2. Clone the repository using HTTPS: `git clone {clone_url_https}`
+2. Analyse the task and determine what needs to be done.
+3. Clone the repository using HTTPS: `git clone {clone_url_https}`
    - If the HTTPS clone fails (e.g. "Repository not found" or authentication error), immediately retry using SSH: `git clone {clone_url_ssh}`
    - Do NOT search for the repository, fork it, or create a new one — just switch to SSH and continue.
-3. Create a new feature branch named `{branch_name}` from `{default_branch}`.
-4. Before making any commits, configure git to use the correct author identity:
+4. Create a new branch named `{branch_name}` from `{default_branch}`.
+5. Before making any commits, configure git to use the correct author identity:
    - `git config user.name "{committer_name}"`
    - `git config user.email "{committer_email}"`
-5. Implement the required changes. Write clean, well-tested code following the existing code style.
-6. Commit your changes with a descriptive commit message referencing the task ID `{task.id}`.
-7. Push the branch and open a pull request targeting `{default_branch}`.
-   - PR title: `[{task.id}] {task.title}`
-   - PR body: include a summary of what was changed and reference the task ID.
-8. Once the PR is created, call the `report_pr` tool with the PR URL so the system can record it.
-9. Call the `set_status` tool with the status that best means "ready for review" from the available statuses list above.
-
-Do NOT modify unrelated files. Do NOT leave the branch unpushed.
-"""
-
-
-def _general_task_prompt(
-    task: Task,
-    github_repo: str,
-    default_branch: str,
-    credential_helper_path: str,
-    committer_name: str,
-    committer_email: str,
-    available_statuses: list[str],
-) -> str:
-    branch_name = _branch_name(task)
-    clone_url_https = f"https://github.com/{github_repo}.git"
-    clone_url_ssh = f"git@github.com:{github_repo}.git"
-    credential_setup = _credential_setup_step(credential_helper_path)
-    status_section = _status_section(available_statuses)
-    return f"""You are an AI assistant. Complete the following task.
-
-## Task
-**ID**: {task.id}
-**Title**: {task.title}
-**Platform**: {task.platform}
-
-## Description
-{task.description}
-{status_section}
-## Instructions
-1. Configure git authentication: {credential_setup}
-2. Analyse the task and complete it to the best of your ability.
-3. Clone the repository using HTTPS: `git clone {clone_url_https}` then create branch `{branch_name}` from `{default_branch}`.
-   - If the HTTPS clone fails (e.g. "Repository not found" or authentication error), immediately retry using SSH: `git clone {clone_url_ssh}`
-   - Do NOT search for the repository, fork it, or create a new one — just switch to SSH and continue.
-4. Before making any commits, configure git to use the correct author identity:
-   - `git config user.name "{committer_name}"`
-   - `git config user.email "{committer_email}"`
-5. Commit any output, notes, or deliverables from the task to that branch.
-6. Open a pull request targeting `{default_branch}`.
+6. Complete the task: if it involves code changes, implement them following the existing code style; otherwise commit any relevant output, notes, or deliverables to the branch.
+7. Commit your work with a descriptive commit message referencing the task ID `{task.id}`.
+8. Push the branch and open a pull request targeting `{default_branch}`.
    - PR title: `[{task.id}] {task.title}`
    - PR body: include a summary of what was done and reference the task ID.
-7. Once the PR is created, call the `report_pr` tool with the PR URL so the system can record it.
-8. Call the `set_status` tool with the status that best means "ready for review" from the available statuses list above.
+9. Once the PR is created, call the `report_pr` tool with the PR URL so the system can record it.
+10. Call the `set_status` tool with the status that best means "ready for review" from the available statuses list above.
+
+Do NOT modify unrelated files. Do NOT leave the branch unpushed.
 """
 
 

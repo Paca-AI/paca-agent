@@ -8,8 +8,7 @@ import pytest
 
 from paca_agent.agent.dispatcher import TaskDispatcher
 from paca_agent.agent.runner import RunResult
-from paca_agent.models import Task, TaskType
-
+from paca_agent.models import Task
 
 # ---------------------------------------------------------------------------
 # Helpers / fixtures
@@ -24,7 +23,6 @@ def _make_task() -> Task:
         status="todo",
         assignee_id="ai-bot",
         platform="paca",
-        task_type=TaskType.CODE,
     )
 
 

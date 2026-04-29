@@ -5,7 +5,7 @@ API docs: https://clickup.com/api
 
 from __future__ import annotations
 
-from paca_agent.models import Task, TaskType
+from paca_agent.models import Task
 from paca_agent.platforms.base import BasePlatform
 
 
@@ -49,11 +49,6 @@ class ClickUpPlatform(BasePlatform):
 
     def _parse_task(self, item: dict) -> Task:
         description = item.get("description", "") or ""
-        task_type = (
-            TaskType.CODE
-            if any(kw in description.lower() for kw in ("implement", "fix", "bug", "code"))
-            else TaskType.GENERAL
-        )
         assignees = item.get("assignees", [])
         assignee_id = ",".join(str(a.get("id", "")) for a in assignees)
         return Task(
@@ -63,7 +58,6 @@ class ClickUpPlatform(BasePlatform):
             status=item.get("status", {}).get("status", ""),
             assignee_id=assignee_id,
             platform="clickup",
-            task_type=task_type,
             raw=item,
         )
 

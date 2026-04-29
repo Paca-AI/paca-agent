@@ -14,10 +14,10 @@ import os
 import re
 import stat
 import tempfile
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Generator
 
 from openhands.sdk import LLM, Agent, LocalConversation, Tool
 from openhands.sdk.tool import register_tool
@@ -87,7 +87,7 @@ class AgentRunner:
 
     async def run(self, task: Task, platform: BasePlatform) -> RunResult:
         """Execute the agent for *task* and return a :class:`RunResult`."""
-        logger.info("agent.run.start", task_id=task.id, task_type=task.task_type)
+        logger.info("agent.run.start", task_id=task.id)
 
         # Fetch available statuses so the agent can pick the right one.
         # Failures are non-fatal — the dispatcher falls back to platform properties.
