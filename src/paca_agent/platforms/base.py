@@ -57,12 +57,20 @@ class BasePlatform(ABC):
         """Return all tasks currently assigned to *user_id*."""
 
     @abstractmethod
+    async def get_available_statuses(self, task_id: str) -> list[str]:
+        """Return the list of status names available for the given task."""
+
+    @abstractmethod
     async def update_task_status(self, task_id: str, status: str) -> None:
         """Change the status of a task."""
 
     @abstractmethod
     async def add_task_comment(self, task_id: str, comment: str) -> None:
         """Post a comment on a task."""
+
+    @abstractmethod
+    async def assign_task(self, task_id: str, user_id: str) -> None:
+        """Assign a task to a user."""
 
     # ------------------------------------------------------------------
     # Status helpers — override per-platform if names differ

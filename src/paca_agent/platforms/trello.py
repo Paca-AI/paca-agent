@@ -84,6 +84,9 @@ class TrelloPlatform(BasePlatform):
     # Task mutations
     # ------------------------------------------------------------------
 
+    async def get_available_statuses(self, task_id: str) -> list[str]:  # noqa: ARG002
+        return [self.status_in_progress, self.status_ready_for_review, self.status_done]
+
     async def update_task_status(self, task_id: str, status: str) -> None:
         """Move the card to a list with the given name or ID."""
         response = await self.client.put(
@@ -96,6 +99,13 @@ class TrelloPlatform(BasePlatform):
         response = await self.client.post(
             f"/1/cards/{task_id}/actions/comments",
             params={"text": comment},
+        )
+        response.raise_for_status()
+
+    async def assign_task(self, task_id: str, user_id: str) -> None:
+        response = await self.client.post(
+            f"/1/cards/{task_id}/idMembers",
+            params={"value": user_id},
         )
         response.raise_for_status()
 
