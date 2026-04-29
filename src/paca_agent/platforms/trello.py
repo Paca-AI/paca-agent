@@ -5,7 +5,7 @@ API docs: https://developer.atlassian.com/cloud/trello/rest/
 
 from __future__ import annotations
 
-from paca_agent.models import Task, TaskType
+from paca_agent.models import Task
 from paca_agent.platforms.base import BasePlatform
 
 
@@ -64,11 +64,6 @@ class TrelloPlatform(BasePlatform):
 
     def _parse_card(self, card: dict) -> Task:
         description = card.get("desc", "") or ""
-        task_type = (
-            TaskType.CODE
-            if any(kw in description.lower() for kw in ("implement", "fix", "bug", "code"))
-            else TaskType.GENERAL
-        )
         return Task(
             id=card["id"],
             title=card.get("name", ""),
@@ -76,7 +71,6 @@ class TrelloPlatform(BasePlatform):
             status=card.get("idList", ""),
             assignee_id=",".join(card.get("idMembers", [])),
             platform="trello",
-            task_type=task_type,
             raw=card,
         )
 

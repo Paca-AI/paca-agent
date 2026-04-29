@@ -13,7 +13,7 @@ from paca_agent.config import (
     PlatformType,
     Settings,
 )
-from paca_agent.models import Task, TaskType
+from paca_agent.models import Task
 
 
 @pytest.fixture()
@@ -72,7 +72,6 @@ def code_task() -> Task:
         status="todo",
         assignee_id="ai-bot",
         platform="paca",
-        task_type=TaskType.CODE,
     )
 
 
@@ -85,5 +84,4 @@ def general_task() -> Task:
         status="todo",
         assignee_id="ai-bot",
         platform="paca",
-        task_type=TaskType.GENERAL,
     )

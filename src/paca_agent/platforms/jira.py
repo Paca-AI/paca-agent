@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import base64
 
-from paca_agent.models import Task, TaskType
+from paca_agent.models import Task
 from paca_agent.platforms.base import BasePlatform
 
 
@@ -67,11 +67,6 @@ class JiraPlatform(BasePlatform):
         fields = issue.get("fields", {})
         description_doc = fields.get("description") or {}
         description = self._extract_text(description_doc)
-        task_type = (
-            TaskType.CODE
-            if any(kw in description.lower() for kw in ("implement", "fix", "refactor", "bug"))
-            else TaskType.GENERAL
-        )
         return Task(
             id=issue.get("key") or issue.get("id", ""),
             title=fields.get("summary", ""),
@@ -79,7 +74,6 @@ class JiraPlatform(BasePlatform):
             status=fields.get("status", {}).get("name", ""),
             assignee_id=str(fields.get("assignee", {}).get("accountId", "")),
             platform="jira",
-            task_type=task_type,
             raw=issue,
         )
 

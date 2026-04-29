@@ -6,8 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from paca_agent.listeners.push import PushListener, _infer_type
-from paca_agent.models import TaskType
+from paca_agent.listeners.push import PushListener
 
 
 @pytest.fixture()
@@ -15,14 +14,6 @@ def listener(settings) -> PushListener:
     platform = MagicMock()
     dispatcher = AsyncMock()
     return PushListener(settings=settings, platform=platform, dispatcher=dispatcher)
-
-
-def test_infer_type_code() -> None:
-    assert _infer_type("Please implement the login feature") == TaskType.CODE
-
-
-def test_infer_type_general() -> None:
-    assert _infer_type("Write the quarterly report") == TaskType.GENERAL
 
 
 def test_parse_paca_webhook_assignment(listener: PushListener) -> None:
@@ -72,7 +63,6 @@ def test_parse_jira_webhook(listener: PushListener) -> None:
     task = listener._parse_jira(payload)
     assert task is not None
     assert task.id == "PROJ-5"
-    assert task.task_type == TaskType.CODE
 
 
 def test_parse_unknown_platform_returns_none(listener: PushListener) -> None:

@@ -12,7 +12,7 @@ from fastapi import FastAPI, Header, HTTPException, Request, status
 
 from paca_agent.config import PlatformType
 from paca_agent.listeners.base import BaseListener
-from paca_agent.models import Task, TaskType
+from paca_agent.models import Task
 from paca_agent.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -108,7 +108,6 @@ class PushListener(BaseListener):
             status=task_data.get("status", {}).get("name", ""),
             assignee_id=str(assignee.get("id", "")),
             platform="paca",
-            task_type=_infer_type(description),
             raw=task_data,
         )
 
@@ -129,7 +128,6 @@ class PushListener(BaseListener):
             status=fields.get("status", {}).get("name", ""),
             assignee_id=str(assignee.get("accountId", "")),
             platform="jira",
-            task_type=_infer_type(description),
             raw=issue,
         )
 
@@ -149,7 +147,6 @@ class PushListener(BaseListener):
             status=card.get("idList", ""),
             assignee_id=str(member_id),
             platform="trello",
-            task_type=_infer_type(description),
             raw=card,
         )
 
@@ -170,7 +167,6 @@ class PushListener(BaseListener):
             status=task_data.get("task_status", {}).get("status", ""),
             assignee_id=ai_id,
             platform="clickup",
-            task_type=_infer_type(description),
             raw=task_data,
         )
 
@@ -188,12 +184,5 @@ class PushListener(BaseListener):
             status=issue.get("status", {}).get("name", ""),
             assignee_id=str(assignee.get("id", "")),
             platform="redmine",
-            task_type=_infer_type(description),
             raw=issue,
         )
-
-
-def _infer_type(description: str) -> TaskType:
-    """Heuristic: classify as CODE if description contains programming keywords."""
-    keywords = ("implement", "fix", "refactor", "bug", "code", "feature", "patch", "pr")
-    return TaskType.CODE if any(kw in description.lower() for kw in keywords) else TaskType.GENERAL
