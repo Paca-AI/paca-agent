@@ -120,7 +120,11 @@ def _general_task_prompt(
 def _credential_setup_step(helper_path: str) -> str:
     """Return the inline instruction the agent should run to configure git credentials."""
     if helper_path:
-        return f"`git config --global credential.helper '{helper_path}'`"
+        return (
+            "`export GIT_CONFIG_COUNT=1; "
+            "export GIT_CONFIG_KEY_0=credential.helper; "
+            f"export GIT_CONFIG_VALUE_0='{helper_path}'`"
+        )
     # No credentials — public repo or credentials already configured externally.
     return "(no credentials needed — repository is public or pre-configured)"
 
