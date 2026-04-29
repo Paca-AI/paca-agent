@@ -27,12 +27,16 @@ class PullListener(BaseListener):
                 tasks: list[Task] = await self._platform.get_assigned_tasks(ai_user)
                 new_tasks = [t for t in tasks if t.id not in seen]
 
-                for task in new_tasks:
+                if new_tasks:
+                    task = new_tasks[0]
                     seen.add(task.id)
                     logger.info("pull_listener.new_task", task_id=task.id, title=task.title)
                     await self._dispatcher.dispatch(task)
+                    # Poll again immediately after completing a task
+                    continue
 
             except Exception as exc:
                 logger.error("pull_listener.poll_error", error=str(exc))
 
+            # No new tasks found (or error) — wait before polling again
             await asyncio.sleep(interval)
