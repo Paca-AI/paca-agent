@@ -20,7 +20,7 @@ from openhands.tools.terminal import TerminalTool
 
 from paca_agent.agent.prompts import build_task_prompt
 from paca_agent.config import DockerSettings, GitHubSettings, LLMSettings
-from paca_agent.models import Task, TaskType
+from paca_agent.models import Task
 from paca_agent.platforms.base import BasePlatform
 from paca_agent.utils.logging import get_logger
 
@@ -93,7 +93,7 @@ class AgentRunner:
                 result_events = conversation.run()
 
             last_message = self._extract_last_message(result_events)
-            pr_url = self._extract_pr_url(last_message) if task.task_type == TaskType.CODE else None
+            pr_url = self._extract_pr_url(last_message)
 
             logger.info("agent.run.complete", task_id=task.id, pr_url=pr_url)
             return RunResult(success=True, pr_url=pr_url, summary=last_message)
@@ -106,14 +106,21 @@ class AgentRunner:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _build_mcp_config(self, task: Task, platform: BasePlatform) -> dict:
+    def _build_mcp_config(self, task: Task, platform: BasePlatform) -> dict | None:
         config: dict = {
             "mcpServers": {
                 "github": {
-                    "command": "uvx",
-                    "args": ["mcp-server-github"],
+                    "command": "docker",
+                    "args": [
+                        "run",
+                        "-i",
+                        "--rm",
+                        "-e",
+                        "GITHUB_PERSONAL_ACCESS_TOKEN",
+                        "ghcr.io/github/github-mcp-server",
+                    ],
                     "env": {
-                        "GITHUB_TOKEN": self._github_settings.token.get_secret_value(),
+                        "GITHUB_PERSONAL_ACCESS_TOKEN": self._github_settings.token.get_secret_value(),
                     },
                 },
             }

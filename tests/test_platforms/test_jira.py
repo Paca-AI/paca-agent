@@ -20,7 +20,7 @@ def platform() -> JiraPlatform:
 
 @respx.mock
 async def test_get_assigned_tasks(platform: JiraPlatform) -> None:
-    respx.get("https://myorg.atlassian.net/rest/api/3/search").mock(
+    respx.post("https://myorg.atlassian.net/rest/api/3/search/jql").mock(
         return_value=httpx.Response(
             200,
             json={

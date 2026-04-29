@@ -47,9 +47,13 @@ class JiraPlatform(BasePlatform):
 
     async def get_assigned_tasks(self, user_id: str) -> list[Task]:
         jql = f'assignee = "{user_id}" AND statusCategory != Done ORDER BY created DESC'
-        response = await self.client.get(
-            "/rest/api/3/search",
-            params={"jql": jql, "maxResults": 50},
+        response = await self.client.post(
+            "/rest/api/3/search/jql",
+            json={
+                "jql": jql,
+                "maxResults": 50,
+                "fields": ["summary", "description", "status", "assignee", "issuetype", "priority"],
+            },
         )
         response.raise_for_status()
         data = response.json()
@@ -69,7 +73,7 @@ class JiraPlatform(BasePlatform):
             else TaskType.GENERAL
         )
         return Task(
-            id=issue["key"],
+            id=issue.get("key") or issue.get("id", ""),
             title=fields.get("summary", ""),
             description=description,
             status=fields.get("status", {}).get("name", ""),

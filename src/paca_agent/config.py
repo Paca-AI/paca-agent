@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -84,10 +84,8 @@ class DockerSettings(BaseSettings):
     cpu_count: int = Field(default=2, ge=1)
 
 
-class Settings(BaseSettings):
-    """Top-level settings aggregator."""
-
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+class Settings(BaseModel):
+    """Top-level settings aggregator. Use :meth:`load` to construct from env."""
 
     # Nested settings groups
     llm: LLMSettings = Field(default_factory=LLMSettings)
@@ -102,10 +100,18 @@ class Settings(BaseSettings):
     @classmethod
     def load(cls) -> Settings:
         """Load settings from .env and environment variables."""
+
+        # Use a thin BaseSettings just to read top-level scalars from .env
+        class _TopLevel(BaseSettings):
+            model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+            ai_account_id: str = Field(..., description="User ID of the AI account")
+
+        top = _TopLevel()
         return cls(
             llm=LLMSettings(),
             platform=PlatformSettings(),  # type: ignore[call-arg]
             listener=ListenerSettings(),
             github=GitHubSettings(),  # type: ignore[call-arg]
             docker=DockerSettings(),
+            ai_account_id=top.ai_account_id,
         )

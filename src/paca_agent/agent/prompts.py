@@ -9,7 +9,7 @@ def build_task_prompt(task: Task, github_repo: str, default_branch: str) -> str:
     """Build the agent's instruction prompt for the given *task*."""
     if task.task_type == TaskType.CODE:
         return _code_task_prompt(task, github_repo, default_branch)
-    return _general_task_prompt(task)
+    return _general_task_prompt(task, github_repo, default_branch)
 
 
 def _code_task_prompt(task: Task, github_repo: str, default_branch: str) -> str:
@@ -38,7 +38,8 @@ Do NOT modify unrelated files. Do NOT leave the branch unpushed.
 """
 
 
-def _general_task_prompt(task: Task) -> str:
+def _general_task_prompt(task: Task, github_repo: str, default_branch: str) -> str:
+    branch_name = _branch_name(task)
     return f"""You are an AI assistant. Complete the following task.
 
 ## Task
@@ -50,8 +51,13 @@ def _general_task_prompt(task: Task) -> str:
 {task.description}
 
 ## Instructions
-Analyse the task and complete it to the best of your ability.
-When finished, summarise what you did in 2-3 sentences so the result can be recorded.
+1. Analyse the task and complete it to the best of your ability.
+2. Use the GitHub MCP tool to create a new branch named `{branch_name}` from `{default_branch}` in repository `{github_repo}`.
+3. Commit any output, notes, or deliverables from the task to that branch.
+4. Open a pull request targeting `{default_branch}`.
+   - PR title: `[{task.id}] {task.title}`
+   - PR body: include a summary of what was done and reference the task ID.
+5. Once the PR is created, respond with "PR_CREATED: <pr_url>" so the system can capture the URL.
 """
 
 

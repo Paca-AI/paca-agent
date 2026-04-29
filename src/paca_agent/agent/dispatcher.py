@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from paca_agent.agent.runner import AgentRunner, RunResult
 from paca_agent.config import Settings
-from paca_agent.models import Task, TaskType
+from paca_agent.models import Task
 from paca_agent.platforms.base import BasePlatform
 from paca_agent.utils.logging import get_logger
 
@@ -35,16 +35,15 @@ class TaskDispatcher:
 
         # 3. Update status based on result
         if result.success:
-            if task.task_type == TaskType.CODE and result.pr_url:
-                await self._set_status(task, self._platform.status_ready_for_review)
+            if result.pr_url:
                 await self._comment(
                     task,
                     f"✅ AI agent completed the task and opened a pull request:\n{result.pr_url}",
                 )
             else:
-                await self._set_status(task, self._platform.status_done)
                 summary = result.summary or "Task completed."
                 await self._comment(task, f"✅ AI agent completed the task.\n\n{summary}")
+            await self._set_status(task, self._platform.status_done)
         else:
             await self._comment(
                 task,
