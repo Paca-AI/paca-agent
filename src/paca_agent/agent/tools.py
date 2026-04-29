@@ -91,7 +91,14 @@ class ReportPRObservation(Observation):
 
     @property
     def to_llm_content(self) -> Sequence[TextContent | ImageContent]:
-        return [TextContent(text="PR URL recorded successfully. Task complete.")]
+        return [
+            TextContent(
+                text=(
+                    "PR URL recorded successfully. Continue by calling set_status to "
+                    "record the final task status."
+                )
+            )
+        ]
 
 
 class PRURLCapture:
