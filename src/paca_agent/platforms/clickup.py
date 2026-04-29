@@ -71,6 +71,9 @@ class ClickUpPlatform(BasePlatform):
     # Task mutations
     # ------------------------------------------------------------------
 
+    async def get_available_statuses(self, task_id: str) -> list[str]:  # noqa: ARG002
+        return [self.status_in_progress, self.status_ready_for_review, self.status_done]
+
     async def update_task_status(self, task_id: str, status: str) -> None:
         response = await self.client.put(
             f"/api/v2/task/{task_id}",
@@ -82,6 +85,13 @@ class ClickUpPlatform(BasePlatform):
         response = await self.client.post(
             f"/api/v2/task/{task_id}/comment",
             json={"comment_text": comment, "notify_all": False},
+        )
+        response.raise_for_status()
+
+    async def assign_task(self, task_id: str, user_id: str) -> None:
+        response = await self.client.put(
+            f"/api/v2/task/{task_id}",
+            json={"assignees": {"add": [int(user_id)], "rem": []}},
         )
         response.raise_for_status()
 

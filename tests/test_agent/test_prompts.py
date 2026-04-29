@@ -13,10 +13,11 @@ def test_code_task_prompt_contains_branch(code_task: Task) -> None:
     assert "main" in prompt
 
 
-def test_general_task_prompt_has_no_github(general_task: Task) -> None:
+def test_general_task_prompt_creates_pr(general_task: Task) -> None:
     prompt = build_task_prompt(general_task, "owner/repo", "main")
-    assert "pull request" not in prompt.lower()
-    assert "clone" not in prompt.lower()
+    assert "pull request" in prompt.lower()
+    assert "clone" in prompt.lower()
+    assert "report_pr" in prompt
 
 
 def test_branch_name_sanitises_title() -> None:

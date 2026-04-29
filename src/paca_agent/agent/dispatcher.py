@@ -36,14 +36,28 @@ class TaskDispatcher:
         # 3. Update status based on result
         if result.success:
             if result.pr_url:
-                await self._comment(
-                    task,
-                    f"✅ AI agent completed the task and opened a pull request:\n{result.pr_url}",
+                # Use the status the agent chose (it saw the real available statuses).
+                # Fall back to the platform's hardcoded property when the agent didn't call set_status.
+                ready_status = result.status or self._platform.status_ready_for_review
+                await self._set_status(task, ready_status)
+                reviewer_id = self._settings.reviewer_id
+                reassigned = False
+                if reviewer_id:
+                    reassigned = await self._reassign(task, reviewer_id)
+                summary = result.summary or ""
+                comment = (
+                    f"✅ AI agent completed the task and opened a pull request:\n{result.pr_url}"
                 )
+                if summary:
+                    comment += f"\n\n**Summary:**\n{summary}"
+                if reassigned:
+                    comment += f"\n\nAssigned to reviewer `{reviewer_id}` for review."
+                await self._comment(task, comment)
             else:
                 summary = result.summary or "Task completed."
+                done_status = result.status or self._platform.status_done
+                await self._set_status(task, done_status)
                 await self._comment(task, f"✅ AI agent completed the task.\n\n{summary}")
-            await self._set_status(task, self._platform.status_done)
         else:
             await self._comment(
                 task,
@@ -66,3 +80,13 @@ class TaskDispatcher:
             await self._platform.add_task_comment(task.id, message)
         except Exception as exc:
             logger.warning("dispatch.comment_failed", task_id=task.id, error=str(exc))
+
+    async def _reassign(self, task: Task, user_id: str) -> bool:
+        try:
+            await self._platform.assign_task(task.id, user_id)
+            return True
+        except Exception as exc:
+            logger.warning(
+                "dispatch.reassign_failed", task_id=task.id, user_id=user_id, error=str(exc)
+            )
+            return False

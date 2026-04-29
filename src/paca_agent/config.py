@@ -67,6 +67,13 @@ class GitHubSettings(BaseSettings):
     token: SecretStr = Field(..., description="GitHub personal access token")
     repo: str = Field(..., description="Target repo in owner/repo format")
     default_branch: str = "main"
+    committer_name: str = Field(
+        default="paca-agent", description="Git author name for commits (GITHUB_COMMITTER_NAME)"
+    )
+    committer_email: str = Field(
+        default="paca-agent@users.noreply.github.com",
+        description="Git author email for commits (GITHUB_COMMITTER_EMAIL)",
+    )
 
     @field_validator("repo")
     @classmethod
@@ -97,6 +104,12 @@ class Settings(BaseModel):
     # The AI account to watch for new task assignments
     ai_account_id: str = Field(..., description="User ID of the AI account on the platform")
 
+    # Optional: platform user ID to assign tasks to for review after completion
+    reviewer_id: str | None = Field(
+        default=None,
+        description="Platform user ID to assign tasks to after a PR is opened (REVIEWER_ID)",
+    )
+
     @classmethod
     def load(cls) -> Settings:
         """Load settings from .env and environment variables."""
@@ -105,6 +118,9 @@ class Settings(BaseModel):
         class _TopLevel(BaseSettings):
             model_config = SettingsConfigDict(env_file=".env", extra="ignore")
             ai_account_id: str = Field(..., description="User ID of the AI account")
+            reviewer_id: str | None = Field(
+                default=None, description="Platform user ID for review assignment"
+            )
 
         top = _TopLevel()
         return cls(
@@ -114,4 +130,5 @@ class Settings(BaseModel):
             github=GitHubSettings(),  # type: ignore[call-arg]
             docker=DockerSettings(),
             ai_account_id=top.ai_account_id,
+            reviewer_id=top.reviewer_id,
         )

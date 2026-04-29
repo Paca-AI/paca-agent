@@ -76,3 +76,24 @@ def test_extract_text_from_adf() -> None:
     result = JiraPlatform._extract_text(adf)
     assert "Hello" in result
     assert "World" in result
+
+
+@respx.mock
+async def test_get_available_statuses(platform: JiraPlatform) -> None:
+    respx.get("https://myorg.atlassian.net/rest/api/3/issue/PROJ-1/transitions").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "transitions": [
+                    {"id": "11", "name": "Ready to review"},
+                    {"id": "21", "name": "In Progress"},
+                    {"id": "31", "name": "Done"},
+                ]
+            },
+        )
+    )
+
+    async with platform:
+        statuses = await platform.get_available_statuses("PROJ-1")
+
+    assert statuses == ["Ready to review", "In Progress", "Done"]

@@ -97,6 +97,12 @@ class JiraPlatform(BasePlatform):
     # Task mutations
     # ------------------------------------------------------------------
 
+    async def get_available_statuses(self, task_id: str) -> list[str]:
+        """Return the names of all transitions available for the given Jira issue."""
+        resp = await self.client.get(f"/rest/api/3/issue/{task_id}/transitions")
+        resp.raise_for_status()
+        return [t["name"] for t in resp.json().get("transitions", [])]
+
     async def update_task_status(self, task_id: str, status: str) -> None:
         """Transition a Jira issue to the given status name."""
         # First fetch available transitions
@@ -132,6 +138,13 @@ class JiraPlatform(BasePlatform):
                     ],
                 }
             },
+        )
+        response.raise_for_status()
+
+    async def assign_task(self, task_id: str, user_id: str) -> None:
+        response = await self.client.put(
+            f"/rest/api/3/issue/{task_id}/assignee",
+            json={"accountId": user_id},
         )
         response.raise_for_status()
 
