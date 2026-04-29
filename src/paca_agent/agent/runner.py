@@ -9,6 +9,7 @@ Responsible for:
 
 from __future__ import annotations
 
+import asyncio
 import os
 import re
 import stat
@@ -76,6 +77,9 @@ class AgentRunner:
         self._llm_settings = llm_settings
         self._github_settings = github_settings
         self._docker_settings = docker_settings
+        # Serialises concurrent run() calls so that global tool registrations
+        # (register_tool) don't cross-talk between simultaneous tasks.
+        self._run_lock = asyncio.Lock()
 
     # ------------------------------------------------------------------
     # Public API
@@ -93,6 +97,16 @@ class AgentRunner:
         except Exception as exc:  # noqa: BLE001
             logger.warning("agent.run.statuses_fetch_failed", task_id=task.id, error=str(exc))
 
+        # Hold the lock for the entire duration of the agent conversation.
+        # register_tool() writes to a global registry; serialising runs here
+        # prevents cross-talk between concurrent task dispatches.
+        async with self._run_lock:
+            return await self._run_locked(task, platform, available_statuses)
+
+    async def _run_locked(
+        self, task: Task, platform: BasePlatform, available_statuses: list[str]
+    ) -> RunResult:
+        """Run the agent conversation. Must be called while holding ``_run_lock``."""
         mcp_config = self._build_mcp_config(task, platform)
 
         # Create per-run capture objects and register tools as fixed instances.

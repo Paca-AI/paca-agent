@@ -41,15 +41,16 @@ class TaskDispatcher:
                 ready_status = result.status or self._platform.status_ready_for_review
                 await self._set_status(task, ready_status)
                 reviewer_id = self._settings.reviewer_id
+                reassigned = False
                 if reviewer_id:
-                    await self._reassign(task, reviewer_id)
+                    reassigned = await self._reassign(task, reviewer_id)
                 summary = result.summary or ""
                 comment = (
                     f"✅ AI agent completed the task and opened a pull request:\n{result.pr_url}"
                 )
                 if summary:
                     comment += f"\n\n**Summary:**\n{summary}"
-                if reviewer_id:
+                if reassigned:
                     comment += f"\n\nAssigned to reviewer `{reviewer_id}` for review."
                 await self._comment(task, comment)
             else:
@@ -80,10 +81,12 @@ class TaskDispatcher:
         except Exception as exc:
             logger.warning("dispatch.comment_failed", task_id=task.id, error=str(exc))
 
-    async def _reassign(self, task: Task, user_id: str) -> None:
+    async def _reassign(self, task: Task, user_id: str) -> bool:
         try:
             await self._platform.assign_task(task.id, user_id)
+            return True
         except Exception as exc:
             logger.warning(
                 "dispatch.reassign_failed", task_id=task.id, user_id=user_id, error=str(exc)
             )
+            return False
