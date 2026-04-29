@@ -9,11 +9,14 @@ Responsible for:
 
 from __future__ import annotations
 
+import os
 import re
 import stat
 import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Generator
 
 from openhands.sdk import LLM, Agent, LocalConversation, Tool
 from openhands.sdk.tool import register_tool
@@ -31,6 +34,25 @@ from paca_agent.utils.logging import get_logger
 logger = get_logger(__name__)
 
 _PR_URL_RE = re.compile(r"PR_CREATED:\s*(https://github\.com/\S+)", re.IGNORECASE)
+
+# Name of the environment variable used to pass the GitHub token to the
+# credential helper without embedding it in the script file.
+_CREDENTIAL_TOKEN_ENV = "GIT_CREDENTIAL_TOKEN"
+
+
+@contextmanager
+def _inject_env(extras: dict[str, str]) -> Generator[None, None, None]:
+    """Temporarily add *extras* to ``os.environ`` and restore on exit."""
+    old: dict[str, str | None] = {k: os.environ.get(k) for k in extras}
+    os.environ.update(extras)
+    try:
+        yield
+    finally:
+        for key, old_value in old.items():
+            if old_value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = old_value
 
 
 @dataclass
@@ -104,8 +126,9 @@ class AgentRunner:
 
         try:
             with tempfile.TemporaryDirectory() as workdir:
-                # Write a git credential helper script to the ephemeral workspace.
-                # The token is stored only on disk (never in the LLM prompt or logs).
+                # Write a git credential helper that reads the token from an
+                # environment variable so the token is never stored in the
+                # script file itself.
                 credential_helper_path = self._write_git_credential_helper(workdir)
 
                 prompt = build_task_prompt(
@@ -123,8 +146,15 @@ class AgentRunner:
                     agent=agent,
                     workspace=workspace,
                 )
-                conversation.send_message(prompt)
-                result_events = conversation.run()
+
+                # Inject the token into the process environment only for the
+                # duration of the conversation so the credential helper can
+                # read it without the token ever appearing in a readable file.
+                token = self._github_settings.token.get_secret_value()
+                env_extras = {_CREDENTIAL_TOKEN_ENV: token} if token else {}
+                with _inject_env(env_extras):
+                    conversation.send_message(prompt)
+                    result_events = conversation.run()
 
             last_message = self._extract_last_message(result_events)
             # Prefer the URL captured via the report_pr tool; fall back to regex on the final message.
@@ -172,10 +202,14 @@ class AgentRunner:
         return config
 
     def _write_git_credential_helper(self, workdir: str) -> str:
-        """Write a chmod-700 git credential helper script to the workspace.
+        """Write a git credential helper script that reads the token from the
+        ``GIT_CREDENTIAL_TOKEN`` environment variable.
 
-        The script outputs the GitHub token so git can authenticate without the
-        token ever appearing in the LLM prompt or application logs.
+        The GitHub token is *never* written to disk — it is only referenced by
+        name in the script so that even if the agent reads the file it cannot
+        recover the credential.  The caller must inject the token into the
+        process environment via :func:`_inject_env` before running the
+        conversation.
 
         Returns the absolute path to the helper script, or an empty string when
         no token is configured (public repos).
@@ -185,11 +219,15 @@ class AgentRunner:
             return ""
         helper = Path(workdir) / ".git-credential-helper"
         helper.write_text(
-            "#!/bin/sh\n" 'echo "username=x-access-token"\n' f'echo "password={token}"\n'
+            "#!/bin/sh\n"
+            f"# Reads the GitHub token from the ${_CREDENTIAL_TOKEN_ENV} environment variable.\n"
+            'echo "username=x-access-token"\n'
+            f'echo "password=${{{_CREDENTIAL_TOKEN_ENV}}}"\n'
         )
-        # Owner-only: the agent can execute it without being able to read it via
-        # glob/listing (no read bit for others).
-        helper.chmod(stat.S_IRWXU)  # 0o700
+        # Owner read+execute only — no write, no group/other access.
+        # The file content is not sensitive (token comes from env), but we
+        # still restrict access to avoid unnecessary exposure.
+        helper.chmod(stat.S_IRUSR | stat.S_IXUSR)  # 0o500
         return str(helper)
 
     @staticmethod
