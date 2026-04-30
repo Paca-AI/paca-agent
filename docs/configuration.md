@@ -47,18 +47,73 @@
 | `DOCKER_MEMORY` | No | `4g` | Memory limit |
 | `DOCKER_CPU_COUNT` | No | `2` | CPU limit |
 
+### Agent Mode
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `AGENT_MODE` | No | `developer` | Name of the agent mode to use (see [Agent Modes](#agent-modes)) |
+
+## Agent Modes
+
+Agent modes define the persona, principles, and behaviour of the AI agent that runs each task.
+They are plain Markdown files with a small YAML frontmatter block.
+
+### Built-in Modes
+
+| Mode | Description |
+|------|-------------|
+| `developer` | Full-stack software developer. Implements features, fixes bugs, writes clean code, opens PRs. |
+| `tester` | QA engineer. Writes automated tests, finds edge cases, improves test coverage. |
+| `planner` | Technical planner. Breaks down requirements, writes specs and ADRs, produces implementation plans. |
+| `business-analyst` | Business analyst. Gathers requirements, writes user stories with acceptance criteria, documents processes. |
+
+### Custom Agent Modes
+
+Create an `agents/` folder in your project root and add a Markdown file for each custom mode:
+
+```
+your-project/
+└── agents/
+    ├── devops.md
+    └── security-reviewer.md
+```
+
+**File format** (`agents/devops.md`):
+
+```markdown
+---
+name: devops
+description: Infrastructure and DevOps specialist focused on CI/CD and container orchestration.
+---
+
+You are an expert DevOps engineer AI agent. Your goal is to improve infrastructure,
+automate deployments, and maintain healthy CI/CD pipelines.
+
+## Principles
+
+- Prefer declarative configuration over imperative scripts.
+- Every change to infrastructure should be version-controlled and reviewed.
+- Fail fast: pipelines should catch issues before they reach production.
+```
+
+The frontmatter `name` and `description` fields are optional but recommended.
+The body (everything after the second `---`) becomes the system prompt prepended to every task.
+
+User-defined agents in `agents/` take priority over built-in agents with the same name,
+allowing you to override the built-in `developer` mode for your project.
+
 ## Platform-Specific Notes
 
 ### Trello
 
 `PLATFORM_API_KEY` must be in `<key>/<token>` format (both values from [trello.com/app-key](https://trello.com/app-key)).
 
-`update_task_status()` expects a Trello list ID, not a list name.  
+`update_task_status()` expects a Trello list ID, not a list name.
 Use `TRELLO_IN_PROGRESS_LIST_ID` / `TRELLO_REVIEW_LIST_ID` overrides (coming soon) or subclass `TrelloPlatform`.
 
 ### Redmine
 
-Status updates use the default Redmine workflow status IDs (2 = In Progress, 3 = Resolved).  
+Status updates use the default Redmine workflow status IDs (2 = In Progress, 3 = Resolved).
 Override `_resolve_status_id()` if your Redmine installation uses different IDs.
 
 ### Jira

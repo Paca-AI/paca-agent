@@ -98,3 +98,12 @@ class BasePlatform(ABC):
     def mcp_config(self) -> dict | None:
         """Return an MCP server config dict for this platform, or *None*."""
         return None
+
+    def mcp_prompt_section(self, workflow: str) -> str:
+        """Return a prompt section with platform MCP usage guidance for the agent.
+
+        Override this in platform subclasses that expose an MCP server.
+        *workflow* is either ``"code"`` or ``"platform"``.
+        Returns an empty string by default (no MCP guidance).
+        """
+        return ""

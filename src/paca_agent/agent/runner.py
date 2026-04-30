@@ -20,13 +20,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from openhands.sdk import LLM, Agent, LocalConversation, Tool
-from openhands.sdk.tool import register_tool
 from openhands.sdk.workspace import LocalWorkspace
 from openhands.tools.file_editor import FileEditorTool
 from openhands.tools.terminal import TerminalTool
 
+from paca_agent.agent.loader import AgentMode
+from paca_agent.agent.loader import load as load_agent_mode
 from paca_agent.agent.prompts import build_task_prompt
-from paca_agent.agent.tools import PRURLCapture, ReportPRTool, SetStatusTool, StatusCapture
 from paca_agent.config import DockerSettings, GitHubSettings, LLMSettings
 from paca_agent.models import Task
 from paca_agent.platforms.base import BasePlatform
@@ -34,10 +34,8 @@ from paca_agent.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-_PR_URL_RE = re.compile(r"PR_CREATED:\s*(https://github\.com/\S+)", re.IGNORECASE)
+_PR_URL_RE = re.compile(r"https://github\.com/\S+/pull/\d+", re.IGNORECASE)
 
-# Name of the environment variable used to pass the GitHub token to the
-# credential helper without embedding it in the script file.
 _CREDENTIAL_TOKEN_ENV = "GIT_CREDENTIAL_TOKEN"
 
 
@@ -60,7 +58,6 @@ def _inject_env(extras: dict[str, str]) -> Generator[None, None, None]:
 class RunResult:
     success: bool
     pr_url: str | None = None
-    status: str | None = None
     summary: str | None = None
     error: str | None = None
 
@@ -73,13 +70,23 @@ class AgentRunner:
         llm_settings: LLMSettings,
         github_settings: GitHubSettings,
         docker_settings: DockerSettings,
+        agent_mode: str = "developer",
     ) -> None:
         self._llm_settings = llm_settings
         self._github_settings = github_settings
         self._docker_settings = docker_settings
+        self._agent_mode = self._resolve_agent_mode(agent_mode)
         # Serialises concurrent run() calls so that global tool registrations
-        # (register_tool) don't cross-talk between simultaneous tasks.
+        # don't cross-talk between simultaneous tasks.
         self._run_lock = asyncio.Lock()
+
+    @staticmethod
+    def _resolve_agent_mode(name: str) -> AgentMode:
+        try:
+            return load_agent_mode(name)
+        except FileNotFoundError:
+            logger.warning("agent.mode.not_found", mode=name, fallback="developer")
+            return load_agent_mode("developer")
 
     # ------------------------------------------------------------------
     # Public API
@@ -98,8 +105,6 @@ class AgentRunner:
             logger.warning("agent.run.statuses_fetch_failed", task_id=task.id, error=str(exc))
 
         # Hold the lock for the entire duration of the agent conversation.
-        # register_tool() writes to a global registry; serialising runs here
-        # prevents cross-talk between concurrent task dispatches.
         async with self._run_lock:
             return await self._run_locked(task, platform, available_statuses)
 
@@ -107,17 +112,9 @@ class AgentRunner:
         self, task: Task, platform: BasePlatform, available_statuses: list[str]
     ) -> RunResult:
         """Run the agent conversation. Must be called while holding ``_run_lock``."""
-        mcp_config = self._build_mcp_config(task, platform)
+        mcp_config = self._build_mcp_config(platform)
 
-        # Create per-run capture objects and register tools as fixed instances.
-        # _resolver_from_instance is used, which returns the fixed instance without
-        # any kwargs — avoiding the conv_state= mismatch in _resolver_from_callable.
-        # Tasks run sequentially so re-registering is safe.
-        pr_capture = PRURLCapture()
-        register_tool("report_pr", ReportPRTool.create(pr_capture))
-
-        status_capture = StatusCapture()
-        register_tool("set_status", SetStatusTool.create(status_capture))
+        is_code_workflow = self._agent_mode.workflow == "code"
 
         llm = LLM(
             model=self._llm_settings.model,
@@ -128,8 +125,6 @@ class AgentRunner:
         tools = [
             Tool(name=TerminalTool.name),
             Tool(name=FileEditorTool.name),
-            Tool(name="report_pr"),
-            Tool(name="set_status"),
         ]
 
         agent = Agent(
@@ -143,7 +138,9 @@ class AgentRunner:
                 # Write a git credential helper that reads the token from an
                 # environment variable so the token is never stored in the
                 # script file itself.
-                credential_helper_path = self._write_git_credential_helper(workdir)
+                credential_helper_path = (
+                    self._write_git_credential_helper(workdir) if is_code_workflow else ""
+                )
 
                 prompt = build_task_prompt(
                     task,
@@ -153,6 +150,9 @@ class AgentRunner:
                     committer_name=self._github_settings.committer_name,
                     committer_email=self._github_settings.committer_email,
                     available_statuses=available_statuses,
+                    agent_system_prompt=self._agent_mode.system_prompt,
+                    workflow=self._agent_mode.workflow,
+                    mcp_prompt_section=platform.mcp_prompt_section(self._agent_mode.workflow),
                 )
 
                 workspace = LocalWorkspace(working_dir=workdir)
@@ -171,14 +171,10 @@ class AgentRunner:
                     result_events = conversation.run()
 
             last_message = self._extract_last_message(result_events)
-            # Prefer the URL captured via the report_pr tool; fall back to regex on the final message.
-            pr_url = pr_capture.pr_url or self._extract_pr_url(last_message)
-            chosen_status = status_capture.status
+            pr_url = self._extract_pr_url(last_message)
 
-            logger.info("agent.run.complete", task_id=task.id, pr_url=pr_url, status=chosen_status)
-            return RunResult(
-                success=True, pr_url=pr_url, status=chosen_status, summary=last_message
-            )
+            logger.info("agent.run.complete", task_id=task.id, pr_url=pr_url)
+            return RunResult(success=True, pr_url=pr_url, summary=last_message)
 
         except Exception as exc:
             logger.exception("agent.run.failed", task_id=task.id, error=str(exc))
@@ -188,7 +184,7 @@ class AgentRunner:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _build_mcp_config(self, task: Task, platform: BasePlatform) -> dict | None:
+    def _build_mcp_config(self, platform: BasePlatform) -> dict | None:
         config: dict = {
             "mcpServers": {
                 "github": {
@@ -265,4 +261,4 @@ class AgentRunner:
     @staticmethod
     def _extract_pr_url(text: str) -> str | None:
         match = _PR_URL_RE.search(text)
-        return match.group(1) if match else None
+        return match.group(0) if match else None

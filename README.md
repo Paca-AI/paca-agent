@@ -19,13 +19,24 @@ All code execution happens inside an isolated Docker container so your host mach
 
 ## Supported Platforms
 
-| Platform | Status |
-|----------|--------|
-| [Paca](https://paca.dev) | ✅ Supported |
-| [Jira](https://www.atlassian.com/software/jira) | ✅ Supported |
-| [Trello](https://trello.com) | ✅ Supported |
-| [ClickUp](https://clickup.com) | ✅ Supported |
-| [Redmine](https://www.redmine.org) | ✅ Supported |
+The agent integrates with task management platforms in two layers:
+
+- **Task listening** — fetching newly assigned tasks via each platform's REST API.
+- **Agent actions** — the AI agent interacts with the platform during task execution via an official MCP server.
+
+| Platform | Task Listening | Agent Actions (MCP) |
+|----------|---------------|---------------------|
+| [Jira](https://www.atlassian.com/software/jira) | ✅ REST API | ✅ [Atlassian Remote MCP](https://support.atlassian.com/atlassian-rovo-mcp-server/) (API token) |
+| [ClickUp](https://clickup.com) | ✅ REST API | ✅ [ClickUp Remote MCP](https://developer.clickup.com/docs/connect-an-ai-assistant-to-clickups-mcp-server-1) (OAuth — requires initial browser auth) |
+| [Paca](https://paca.dev) | ✅ REST API | ⏳ MCP not yet configured |
+| [Trello](https://trello.com) | ✅ REST API | ⏳ No official MCP server |
+| [Redmine](https://www.redmine.org) | ✅ REST API | ⏳ No official MCP server |
+
+### Platform MCP Setup
+
+**Jira** — uses the [Atlassian Remote MCP Server](https://support.atlassian.com/atlassian-rovo-mcp-server/) at `https://mcp.atlassian.com/v1/mcp/authv2`. Authentication is via API token (your Atlassian admin must enable *authentication via API token* in the Rovo MCP Server settings). Set `PLATFORM_EMAIL` and `PLATFORM_API_KEY` (your Atlassian API token) in `.env`.
+
+**ClickUp** — uses the [ClickUp Remote MCP Server](https://developer.clickup.com/docs/connect-an-ai-assistant-to-clickups-mcp-server-1) at `https://mcp.clickup.com/mcp` via OAuth 2.0. Because OAuth requires a browser-based auth flow, you must complete the initial authentication once before running the agent headlessly. Access tokens are then cached by FastMCP at `~/.fastmcp/oauth-mcp-client-cache/`.
 
 ## Quick Start
 

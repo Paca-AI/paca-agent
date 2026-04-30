@@ -98,6 +98,10 @@ class Settings(BaseModel):
     llm: LLMSettings = Field(default_factory=LLMSettings)
     platform: PlatformSettings = Field(default_factory=PlatformSettings)  # type: ignore[call-arg]
     listener: ListenerSettings = Field(default_factory=ListenerSettings)
+
+    # Agent mode — name of the .md file in agents/ or a built-in agent.
+    # Built-in options: developer, tester, planner, business-analyst.
+    agent_mode: str = Field(default="developer", description="Agent mode to use (AGENT_MODE)")
     github: GitHubSettings = Field(default_factory=GitHubSettings)  # type: ignore[call-arg]
     docker: DockerSettings = Field(default_factory=DockerSettings)
 
@@ -121,6 +125,9 @@ class Settings(BaseModel):
             reviewer_id: str | None = Field(
                 default=None, description="Platform user ID for review assignment"
             )
+            agent_mode: str = Field(
+                default="developer", description="Agent mode (e.g. developer, tester, planner)"
+            )
 
         top = _TopLevel()
         return cls(
@@ -131,4 +138,5 @@ class Settings(BaseModel):
             docker=DockerSettings(),
             ai_account_id=top.ai_account_id,
             reviewer_id=top.reviewer_id,
+            agent_mode=top.agent_mode,
         )
