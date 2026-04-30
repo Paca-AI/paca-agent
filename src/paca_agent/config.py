@@ -71,7 +71,7 @@ class GitHubSettings(BaseSettings):
         default="paca-agent", description="Git author name for commits (GITHUB_COMMITTER_NAME)"
     )
     committer_email: str = Field(
-        default="paca-agent@users.noreply.github.com",
+        default="280579135+paca-agent@users.noreply.github.com",
         description="Git author email for commits (GITHUB_COMMITTER_EMAIL)",
     )
 
