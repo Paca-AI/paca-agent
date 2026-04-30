@@ -11,7 +11,7 @@ def build_task_prompt(
     default_branch: str,
     credential_helper_path: str = "",
     committer_name: str = "paca-agent",
-    committer_email: str = "paca-agent@users.noreply.github.com",
+    committer_email: str = "280579135+paca-agent@users.noreply.github.com",
     available_statuses: list[str] | None = None,
 ) -> str:
     """Build the agent's instruction prompt for the given *task*."""
