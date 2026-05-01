@@ -161,11 +161,15 @@ class AgentRunner:
                     workspace=workspace,
                 )
 
-                # Inject the token into the process environment only for the
-                # duration of the conversation so the credential helper can
-                # read it without the token ever appearing in a readable file.
+                # Inject the token into the process environment only when
+                # running a code workflow that actually uses a credential helper,
+                # so the secret is not exposed in non-code (platform) workflows.
                 token = self._github_settings.token.get_secret_value()
-                env_extras = {_CREDENTIAL_TOKEN_ENV: token} if token else {}
+                env_extras = (
+                    {_CREDENTIAL_TOKEN_ENV: token}
+                    if is_code_workflow and credential_helper_path and token
+                    else {}
+                )
                 with _inject_env(env_extras):
                     conversation.send_message(prompt)
                     result_events = conversation.run()
