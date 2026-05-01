@@ -39,7 +39,7 @@ The agent integrates with task management platforms via REST API polling or webh
 
 ### Platform MCP Setup
 
-**Jira** — uses the [Atlassian Remote MCP Server](https://support.atlassian.com/atlassian-rovo-mcp-server/) at `https://mcp.atlassian.com/v1/mcp/authv2`. Authentication is via API token (your Atlassian admin must enable *authentication via API token* in the Rovo MCP Server settings). Set `PLATFORM_EMAIL` and `PLATFORM_API_KEY` (your Atlassian API token) in `.env`.
+**Jira** — uses the [`sooperset/mcp-atlassian`](https://github.com/sooperset/mcp-atlassian) MCP server via `uvx`, not Atlassian’s Remote MCP Server URL. Configure the Jira connection in `.env` with `JIRA_URL`, `JIRA_USERNAME`, and `JIRA_API_TOKEN` so the adapter can authenticate against your Jira instance using the same settings as the implementation.
 
 > MCP setup for other platforms (ClickUp, Paca, Trello, Redmine) will be documented as support is added.
 
