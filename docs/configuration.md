@@ -63,7 +63,7 @@ They are plain Markdown files with a small YAML frontmatter block.
 | Mode | Description |
 |------|-------------|
 | `developer` | Full-stack software developer. Implements features, fixes bugs, writes clean code, opens PRs. |
-| `tester` | QA engineer. Writes automated tests, finds edge cases, improves test coverage. |
+| `tester` | QA engineer. Performs manual QA, validates behaviour, reproduces issues, and files clear bug reports in the platform. |
 | `planner` | Technical planner. Breaks down requirements, writes specs and ADRs, produces implementation plans. |
 | `business-analyst` | Business analyst. Gathers requirements, writes user stories with acceptance criteria, documents processes. |
 
