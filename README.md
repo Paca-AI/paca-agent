@@ -35,7 +35,7 @@ The agent integrates with task management platforms via REST API polling or webh
 - **Developer** — clones the repo, implements the solution, and opens a pull request
 - **Planner** — breaks down tasks and creates sub-tasks
 - **Business Analyst** — analyses requirements and refines task descriptions
-- **Tester** — writes and runs tests for a given task
+- **Tester** — validates completed work, performs manual QA, and reports bugs
 
 ### Platform MCP Setup
 
