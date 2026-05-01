@@ -15,7 +15,6 @@ class TaskDispatcher:
     """Coordinate a single task through its full lifecycle."""
 
     def __init__(self, settings: Settings, platform: BasePlatform) -> None:
-        self._settings = settings
         self._platform = platform
         self._runner = AgentRunner(
             llm_settings=settings.llm,
