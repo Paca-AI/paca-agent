@@ -17,15 +17,31 @@
 
 All code execution happens inside an isolated Docker container so your host machine stays clean.
 
-## Supported Platforms
+## Supported Platforms & Agent Modes
 
-| Platform | Status |
-|----------|--------|
-| [Paca](https://paca.dev) | ✅ Supported |
-| [Jira](https://www.atlassian.com/software/jira) | ✅ Supported |
-| [Trello](https://trello.com) | ✅ Supported |
-| [ClickUp](https://clickup.com) | ✅ Supported |
-| [Redmine](https://www.redmine.org) | ✅ Supported |
+The agent integrates with task management platforms via REST API polling or webhooks, and supports multiple agent modes representing different roles in the software development lifecycle.
+
+> **Note:** Currently only the **developer** mode is implemented, and only for **Jira**. Support for other modes and platforms is planned for future releases.
+
+| Platform | Developer | Planner | Business Analyst | Tester |
+|----------|-----------|---------|-----------------|--------|
+| [Jira](https://www.atlassian.com/software/jira) | ✅ | ⏳ | ⏳ | ⏳ |
+| [ClickUp](https://clickup.com) | ⏳ | ⏳ | ⏳ | ⏳ |
+| [Paca](https://paca.dev) | ⏳ | ⏳ | ⏳ | ⏳ |
+| [Trello](https://trello.com) | ⏳ | ⏳ | ⏳ | ⏳ |
+| [Redmine](https://www.redmine.org) | ⏳ | ⏳ | ⏳ | ⏳ |
+
+**Agent modes:**
+- **Developer** — clones the repo, implements the solution, and opens a pull request
+- **Planner** — breaks down tasks and creates sub-tasks
+- **Business Analyst** — analyses requirements and refines task descriptions
+- **Tester** — validates completed work, performs manual QA, and reports bugs
+
+### Platform MCP Setup
+
+**Jira** — uses the [`sooperset/mcp-atlassian`](https://github.com/sooperset/mcp-atlassian) MCP server via `uvx`, not Atlassian’s Remote MCP Server URL. Configure the Jira connection in `.env` with `JIRA_URL`, `JIRA_USERNAME`, and `JIRA_API_TOKEN` so the adapter can authenticate against your Jira instance using the same settings as the implementation.
+
+> MCP setup for other platforms (ClickUp, Paca, Trello, Redmine) will be documented as support is added.
 
 ## Quick Start
 

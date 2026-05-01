@@ -97,3 +97,43 @@ async def test_get_available_statuses(platform: JiraPlatform) -> None:
         statuses = await platform.get_available_statuses("PROJ-1")
 
     assert statuses == ["Ready to review", "In Progress", "Done"]
+
+
+def test_mcp_config_with_email(platform: JiraPlatform) -> None:
+    config = platform.mcp_config()
+    assert config is not None
+    server = config["mcpServers"]["mcp-atlassian"]
+    assert server["command"] == "uvx"
+    assert server["args"] == ["mcp-atlassian"]
+    env = server["env"]
+    assert env["JIRA_URL"] == "https://myorg.atlassian.net"
+    assert env["JIRA_USERNAME"] == "user@example.com"
+    assert env["JIRA_API_TOKEN"] == "api-token"
+
+
+def test_mcp_config_personal_token_when_no_email() -> None:
+    platform_no_email = JiraPlatform(
+        base_url="https://myorg.atlassian.net",
+        api_key="my-token",
+    )
+    config = platform_no_email.mcp_config()
+    assert config is not None
+    env = config["mcpServers"]["mcp-atlassian"]["env"]
+    assert env["JIRA_PERSONAL_TOKEN"] == "my-token"
+    assert "JIRA_USERNAME" not in env
+
+
+def test_mcp_prompt_section_code_workflow(platform: JiraPlatform) -> None:
+    section = platform.mcp_prompt_section("code")
+    assert "mcp-atlassian" in section.lower()
+    assert "jira_transition_issue" in section.lower()
+    assert "pull request" in section.lower()
+    assert "in progress" in section.lower()
+    assert "Platform MCP Actions" in section
+
+
+def test_mcp_prompt_section_platform_workflow(platform: JiraPlatform) -> None:
+    section = platform.mcp_prompt_section("platform")
+    assert "mcp-atlassian" in section.lower()
+    assert "in progress" in section.lower()
+    assert "Platform MCP Actions" in section

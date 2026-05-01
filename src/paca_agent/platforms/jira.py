@@ -157,3 +157,57 @@ class JiraPlatform(BasePlatform):
     @property
     def status_done(self) -> str:
         return "Done"
+
+    # ------------------------------------------------------------------
+    # MCP configuration — sooperset/mcp-atlassian
+    # https://github.com/sooperset/mcp-atlassian
+    # ------------------------------------------------------------------
+
+    def mcp_config(self) -> dict | None:
+        env: dict[str, str] = {
+            "JIRA_URL": self.base_url,
+        }
+        if self.email:
+            env["JIRA_USERNAME"] = self.email
+            env["JIRA_API_TOKEN"] = self._api_key
+        else:
+            env["JIRA_PERSONAL_TOKEN"] = self._api_key
+
+        return {
+            "mcpServers": {
+                "mcp-atlassian": {
+                    "command": "uvx",
+                    "args": ["mcp-atlassian"],
+                    "env": env,
+                }
+            }
+        }
+
+    def mcp_prompt_section(self, workflow: str) -> str:
+        if workflow == "code":
+            instructions = (
+                "The **mcp-atlassian** server is available to you.\n"
+                "Before you start coding:\n"
+                "1. Use `mcp-atlassian` tools (e.g. `jira_transition_issue`) to transition "
+                'the Jira issue to an appropriate "in progress" status.\n'
+                "After creating the pull request:\n"
+                "2. Transition the issue to the appropriate review status (e.g. *In Review*).\n"
+                "3. Add a comment on the issue with the pull request URL and a short summary "
+                "using `jira_add_comment`."
+            )
+        else:
+            instructions = (
+                "The **mcp-atlassian** server is available to you.\n"
+                "Before you start working:\n"
+                "- Use `mcp-atlassian` tools (e.g. `jira_transition_issue`) to transition "
+                'the issue to an appropriate "in progress" status.\n'
+                "Use its tools to interact with the Jira project:\n"
+                "- Create or update sub-tasks, bugs, and epics as required.\n"
+                "- Add comments to communicate findings or decisions.\n"
+                "When your work is done:\n"
+                "- Transition the issue to the most appropriate final status and add a summary comment."
+            )
+        return f"""
+## Platform MCP Actions
+{instructions}
+"""

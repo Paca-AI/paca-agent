@@ -104,3 +104,49 @@ class ClickUpPlatform(BasePlatform):
     @property
     def status_done(self) -> str:
         return "complete"
+
+    # ------------------------------------------------------------------
+    # MCP configuration — ClickUp Remote MCP Server
+    # Docs: https://developer.clickup.com/docs/connect-an-ai-assistant-to-clickups-mcp-server-1
+    # Uses OAuth 2.0; the user must complete a one-time browser-based
+    # auth flow before running headless. Access tokens are cached by
+    # FastMCP at ~/.fastmcp/oauth-mcp-client-cache/.
+    # ------------------------------------------------------------------
+
+    def mcp_config(self) -> dict | None:
+        return {
+            "mcpServers": {
+                "clickup": {
+                    "url": "https://mcp.clickup.com/mcp",
+                    "auth": "oauth",
+                }
+            }
+        }
+
+    def mcp_prompt_section(self, workflow: str) -> str:
+        if workflow == "code":
+            instructions = (
+                "The **ClickUp MCP server** (`clickup`) is available to you.\n"
+                "Before you start coding:\n"
+                "1. Use `clickup` MCP tools to update the task to an appropriate "
+                '"in progress" status.\n'
+                "After creating the pull request:\n"
+                "2. Update the task status to the appropriate review status (e.g. *review*).\n"
+                "3. Add a comment on the task with the pull request URL and a short summary."
+            )
+        else:
+            instructions = (
+                "The **ClickUp MCP server** (`clickup`) is available to you.\n"
+                "Before you start working:\n"
+                "- Use `clickup` MCP tools to update the task to an appropriate "
+                '"in progress" status.\n'
+                "Use its tools to interact with the ClickUp workspace:\n"
+                "- Create or update tasks, subtasks, and checklists as required.\n"
+                "- Add comments to communicate findings or decisions.\n"
+                "When your work is done:\n"
+                "- Update the task to the most appropriate final status and add a summary comment."
+            )
+        return f"""
+## Platform MCP Actions
+{instructions}
+"""
