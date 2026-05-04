@@ -105,6 +105,15 @@ class Settings(BaseModel):
     github: GitHubSettings = Field(default_factory=GitHubSettings)  # type: ignore[call-arg]
     docker: DockerSettings = Field(default_factory=DockerSettings)
 
+    # Path to a JSON file listing extra MCP servers to inject into the agent.
+    # Follows the same {"mcpServers": {...}} format used by Claude Desktop.
+    # Defaults to mcp.json in the current working directory; set to an empty
+    # string to disable file-based MCP server loading.
+    mcp_config_file: str = Field(
+        default="mcp.json",
+        description="Path to MCP servers JSON config file (MCP_CONFIG_FILE)",
+    )
+
     # The AI account to watch for new task assignments
     ai_account_id: str = Field(..., description="User ID of the AI account on the platform")
 
@@ -128,6 +137,9 @@ class Settings(BaseModel):
             agent_mode: str = Field(
                 default="developer", description="Agent mode (e.g. developer, tester, planner)"
             )
+            mcp_config_file: str = Field(
+                default="mcp.json", description="Path to MCP servers JSON config file"
+            )
 
         top = _TopLevel()
         return cls(
@@ -139,4 +151,5 @@ class Settings(BaseModel):
             ai_account_id=top.ai_account_id,
             reviewer_id=top.reviewer_id,
             agent_mode=top.agent_mode,
+            mcp_config_file=top.mcp_config_file,
         )

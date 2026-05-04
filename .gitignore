@@ -73,6 +73,7 @@ logs/
 .env.local
 .env.*.local
 !.env.example
+mcp.json
 
 # OS
 .DS_Store

@@ -10,6 +10,7 @@ Responsible for:
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import re
 import stat
@@ -71,11 +72,13 @@ class AgentRunner:
         github_settings: GitHubSettings,
         docker_settings: DockerSettings,
         agent_mode: str = "developer",
+        mcp_config_file: str = "mcp.json",
     ) -> None:
         self._llm_settings = llm_settings
         self._github_settings = github_settings
         self._docker_settings = docker_settings
         self._agent_mode = self._resolve_agent_mode(agent_mode)
+        self._mcp_config_file = Path(mcp_config_file) if mcp_config_file else None
         # Serialises concurrent run() calls so that global tool registrations
         # don't cross-talk between simultaneous tasks.
         self._run_lock = asyncio.Lock()
@@ -213,7 +216,60 @@ class AgentRunner:
         if platform_mcp and "mcpServers" in platform_mcp:
             config["mcpServers"].update(platform_mcp["mcpServers"])
 
+        # Merge user-defined MCP servers from the JSON config file
+        file_mcp = self._load_mcp_config_file()
+        if file_mcp:
+            config["mcpServers"].update(file_mcp)
+
         return config
+
+    def _load_mcp_config_file(self) -> dict | None:
+        """Load extra MCP servers from the user-provided JSON config file.
+
+        The file must contain a top-level ``mcpServers`` object following the
+        same format used by Claude Desktop and VS Code::
+
+            {
+              "mcpServers": {
+                "my-server": {
+                  "command": "npx",
+                  "args": ["-y", "@my/mcp-server"],
+                  "env": {"MY_KEY": "value"}
+                }
+              }
+            }
+
+        Returns the ``mcpServers`` dict on success, or ``None`` when the file
+        does not exist or cannot be parsed.
+        """
+        if not self._mcp_config_file:
+            return None
+
+        path = self._mcp_config_file
+        if not path.exists():
+            return None
+
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.warning("agent.mcp_config.load_failed", path=str(path), error=str(exc))
+            return None
+
+        servers = data.get("mcpServers")
+        if not isinstance(servers, dict):
+            logger.warning(
+                "agent.mcp_config.invalid_format",
+                path=str(path),
+                hint="expected top-level 'mcpServers' object",
+            )
+            return None
+
+        logger.info(
+            "agent.mcp_config.loaded",
+            path=str(path),
+            servers=list(servers.keys()),
+        )
+        return servers
 
     def _write_git_credential_helper(self, workdir: str) -> str:
         """Write a git credential helper script that reads the token from the

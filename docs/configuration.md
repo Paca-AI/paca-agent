@@ -53,6 +53,83 @@
 |----------|----------|---------|-------------|
 | `AGENT_MODE` | No | `developer` | Name of the agent mode to use (see [Agent Modes](#agent-modes)) |
 
+### MCP Servers
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `MCP_CONFIG_FILE` | No | `mcp.json` | Path to a JSON file listing extra MCP servers. Set to empty string to disable. |
+
+## MCP Server Configuration
+
+The agent always injects the built-in **GitHub MCP** server and any platform-specific MCP server. You can supply additional servers by creating an `mcp.json` file (or another path set in `MCP_CONFIG_FILE`).
+
+The file uses the same `{"mcpServers": {...}}` schema as **Claude Desktop** and **VS Code**, so you can copy server entries directly from either tool's settings.
+
+### File format
+
+```json
+{
+  "mcpServers": {
+    "<server-name>": {
+      "command": "<executable>",
+      "args": ["<arg1>", "<arg2>"],
+      "env": {
+        "ENV_VAR": "value"
+      }
+    }
+  }
+}
+```
+
+Each entry under `mcpServers` is a key/value pair where:
+
+| Field | Description |
+|-------|-------------|
+| key | Unique name for the server (used in logs) |
+| `command` | Executable to launch (`npx`, `uvx`, `docker`, …) |
+| `args` | List of command-line arguments |
+| `env` | Environment variables injected into the server process |
+
+### Example: npm-based server (stdio)
+
+```json
+{
+  "mcpServers": {
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": { "BRAVE_API_KEY": "your-brave-api-key" }
+    }
+  }
+}
+```
+
+### Example: Docker-based server
+
+```json
+{
+  "mcpServers": {
+    "my-server": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "my-org/my-mcp-server:latest"],
+      "env": { "MY_SERVER_API_KEY": "your-api-key" }
+    }
+  }
+}
+```
+
+See [`mcp.example.json`](../mcp.example.json) in the project root for a ready-to-copy template.
+
+> **Security:** `mcp.json` is listed in `.gitignore` because it typically contains API keys. Track `mcp.example.json` with placeholder values instead.
+
+### Merge order
+
+When the agent builds its MCP configuration the servers are merged in this order (later entries win on name collision):
+
+1. Built-in GitHub MCP server
+2. Platform-specific MCP server (e.g. Jira/Atlassian)
+3. Servers from `mcp.json`
+
 ## Agent Modes
 
 Agent modes define the persona, principles, and behaviour of the AI agent that runs each task.

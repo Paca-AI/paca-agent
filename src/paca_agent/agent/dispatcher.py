@@ -21,6 +21,7 @@ class TaskDispatcher:
             github_settings=settings.github,
             docker_settings=settings.docker,
             agent_mode=settings.agent_mode,
+            mcp_config_file=settings.mcp_config_file,
         )
 
     async def dispatch(self, task: Task) -> None:

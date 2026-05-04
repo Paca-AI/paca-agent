@@ -126,6 +126,28 @@ Copy `.env.example` to `.env` and set the variables below.
 | `DOCKER_MEMORY` | Memory limit | `4g` |
 | `DOCKER_CPU_COUNT` | CPU limit | `2` |
 
+### MCP Servers
+
+The agent always connects the built-in **GitHub MCP** server and any platform-specific MCP server. You can inject additional MCP servers by creating an `mcp.json` file in the same directory you run the agent from — the format is identical to Claude Desktop and VS Code:
+
+```json
+{
+  "mcpServers": {
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "your-brave-api-key"
+      }
+    }
+  }
+}
+```
+
+Copy [`mcp.example.json`](mcp.example.json) as a starting point. Set `MCP_CONFIG_FILE` in `.env` to use a different path, or leave it empty to disable file-based MCP loading.
+
+> `mcp.json` is listed in `.gitignore` because it may contain API keys. Commit `mcp.example.json` instead.
+
 ## Webhook Setup (Push Mode)
 
 Set `LISTEN_MODE=push`, then configure your platform to send assignment webhooks to:

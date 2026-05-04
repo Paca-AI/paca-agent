@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "your-brave-api-key"
+      }
+    },
+    "my-docker-server": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "my-org/my-mcp-server:latest"],
+      "env": {
+        "MY_SERVER_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
